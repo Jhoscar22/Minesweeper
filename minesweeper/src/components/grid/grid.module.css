@@ -1,0 +1,13 @@
+.grid {
+    display: flex;
+    flex-direction: column;
+}
+
+.info {
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.row {
+    display: flex;
+}
