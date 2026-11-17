@@ -69,6 +69,25 @@ describe("reveal", () => {
     const revealed = reveal(game, 0, 0);
     expect(revealedCount(revealed)).toBe(16);
   })
+
+  it("revealing the last safe cell wins the game", () => {
+    const game = createGame(4, 4, [[2, 2], [2, 3], [3, 2]]);
+    const revealed = reveal(game, 0, 0);
+    expect(revealed.status).toBe("playing");
+  });
+
+  it("revealing a safe cell (number) keeps the game playing", () => {
+    const game = createGame(4, 4, [[3, 3]]);
+    const revealed = reveal(game, 2, 2);
+    expect(revealed.status).toBe("playing");
+  });
+
+  it("revealing the last safe cell wins the game", () => {
+    const game = createGame(4, 4, [[2, 2], [2, 3], [3, 2]]);
+    const firstReveal = reveal(game, 0, 0);
+    const secondReveal = reveal(firstReveal, 3, 3);
+    expect(secondReveal.status).toBe("won");
+  });
 });
 
 describe("toggleFlag", () => {
