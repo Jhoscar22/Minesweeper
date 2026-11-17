@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createGame, getCell, neighbors, reveal, toggleFlag, adjacentMineCount } from "./game";
+import { createGame, getCell, neighbors, reveal, toggleFlag, adjacentMineCount, revealedCount } from "./game";
 
 describe("neighbors", () => {
   const game = createGame(3, 3, []);
@@ -30,6 +30,69 @@ describe("reveal", () => {
     const game = createGame(3, 3, [[1, 1]]);
     const toggled = toggleFlag(game, 0, 0);
     expect(reveal(toggled, 0, 0)).toBe(toggled);
+  });
+
+  it("reveals the whole connected region of zeros", () => {
+    const game = createGame(4, 4, [[3, 3]]);
+    const revealed = reveal(game, 0, 0);
+    expect(revealedCount(revealed)).toBe(15);
+    expect(getCell(revealed, 3, 3).state).toBe("hidden");
+  });
+
+  it("stops at numbered cells and doesn't cross a wall of mines", () => {
+    const game = createGame(5, 3, [[2, 0], [2, 1], [2, 2]]);
+    const revealed = reveal(game, 0, 0);
+    expect(revealedCount(revealed)).toBe(6);
+    for (let y = 0; y < 3; y++) {
+      expect(getCell(revealed, 1, y).state).toBe("revealed");
+      expect(getCell(revealed, 3, y).state).toBe("hidden");
+    }
+  });
+
+  it("revealing a numbered cell reveals only that cell", () => {
+    const game = createGame(5, 3, [[2, 0], [2, 1], [2, 2]]);
+    const revealed = reveal(game, 3, 0);
+    expect(revealedCount(revealed)).toBe(1);
+  });
+
+  it("flood reveal leaves flags unaffected", () => {
+    const game = createGame(4, 4, [[3, 3]]);
+    const toggled = toggleFlag(game, 3, 0);
+    const revealed = reveal(toggled, 0, 0);
+    expect(revealedCount(revealed)).toBe(14);
+    expect(getCell(revealed, 3, 0).state).toBe("flagged")
+    expect(getCell(revealed, 3, 3).state).toBe("hidden")
+  });
+
+  it("reveals all board if there are no mines", () => {
+    const game = createGame(4, 4, []);
+    const revealed = reveal(game, 0, 0);
+    expect(revealedCount(revealed)).toBe(16);
+  })
+
+  it("revealing a safe cell (zero) keeps the game playing (if at least one cell remains hidden)", () => {
+    const game = createGame(4, 4, [[2, 2], [2, 3], [3, 2]]);
+    const revealed = reveal(game, 0, 0);
+    expect(revealed.status).toBe("playing");
+  });
+
+  it("revealing a safe cell (number) keeps the game playing (if at least one cell remains hidden)", () => {
+    const game = createGame(4, 4, [[3, 3]]);
+    const revealed = reveal(game, 2, 2);
+    expect(revealed.status).toBe("playing");
+  });
+
+  it("revealing a mine loses the game", () => {
+    const game = createGame(4, 4, [[3, 3]]);
+    const revealed = reveal(game, 3, 3);
+    expect(revealed.status).toBe("lost");
+  });
+
+  it("revealing the last safe cell wins the game", () => {
+    const game = createGame(4, 4, [[2, 2], [2, 3], [3, 2]]);
+    const firstReveal = reveal(game, 0, 0);
+    const secondReveal = reveal(firstReveal, 3, 3);
+    expect(secondReveal.status).toBe("won");
   });
 });
 
