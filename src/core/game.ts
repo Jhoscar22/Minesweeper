@@ -111,3 +111,6 @@ export function toggleFlag(game: Game, x: number, y: number): Game{
 
 export const flagCount = (game: Game): number =>
   game.cells.flat().filter(c => c.state === "flagged").length;
+
+export const revealedCount = (game: Game): number =>
+  game.cells.flat().filter(c => c.state === "revealed").length;
