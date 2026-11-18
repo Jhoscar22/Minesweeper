@@ -185,7 +185,7 @@ describe("first click", () => {
         const minePlacementTwo = reveal(game, 4, 5, sequence(0.1, 0.7, 0.3, 0.9));
         expect(minePlacementOne.cells).toEqual(minePlacementTwo.cells);
     });
-    it("retains flagged placed prior", () => {
+    it("keeps flags placed before the first click", () => {
         const game = newGame(10, 10, 40);
         const flagged = toggleFlag(game, 0, 0);
         const revealed = reveal(flagged, 9, 9);

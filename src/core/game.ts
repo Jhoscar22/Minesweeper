@@ -111,36 +111,8 @@ export function reveal(game: Game, x: number, y: number, random: () => number = 
     }
 }
 
-function revealInRow(row: readonly Cell[], columns: ReadonlySet<number>): readonly Cell[] {
-    const result: Cell[] = [];
-    for (const [x, cell] of row.entries()) {
-        if (columns.has(x) && cell.state === "hidden") {
-            result.push({ ...cell, state: "revealed" });
-        } else {
-            result.push(cell);
-        }
-    }
-    return result;
-}
-
 function revealPositions(game: Game, positions: ReadonlyArray<Position>): Game {
-    const columnsToRevealByRow: Map<number, Set<number>> = new Map();
-    for (const [x, y] of positions) {
-        if (columnsToRevealByRow.get(y) === undefined) {
-            columnsToRevealByRow.set(y, new Set());
-        }
-        columnsToRevealByRow.get(y)!.add(x);
-    }
-    const result: (readonly Cell[])[] = [];
-    for (const [y, row] of game.cells.entries()) {
-        const columnsToReveal = columnsToRevealByRow.get(y);
-        if (columnsToReveal === undefined) {
-            result[y] = row;
-        } else {
-            result[y] = revealInRow(row, columnsToReveal);
-        }
-    }
-    return { ...game, cells: result };
+    return {...updatePositions(game, positions, (c) => (c.state === "hidden" ? { ...c, state: "revealed" } : c))};
 }
 
 export function toggleFlag(game: Game, x: number, y: number): Game {
@@ -211,33 +183,12 @@ function placeMines(game: Game, safeX: number, safeY: number, random: () => numb
         }
     }
     const shuffled = shuffle(candidates, random).slice(0, game.mineCount);
-    const columnsToSetMineByRow: Map<number, Set<number>> = new Map();
-    for (const [x, y] of shuffled) {
-        if (columnsToSetMineByRow.get(y) === undefined) columnsToSetMineByRow.set(y, new Set());
-        columnsToSetMineByRow.get(y)!.add(x);
-    }
-    const result: (readonly Cell[])[] = []
-    for (const [y, row] of game.cells.entries()) {
-        const columnsToSetMine = columnsToSetMineByRow.get(y)
-        if (columnsToSetMine === undefined) {
-            result.push(row);
-        } else {
-            const newRow: Cell[] = [];
-            for (const [x, cell] of row.entries()) {
-                if (columnsToSetMine.has(x)) {
-                    newRow.push({...cell, isMine: true});
-                } else {
-                    newRow.push(cell);
-                }
-            }
-            result.push(newRow);
-        }
-    }
-    return {...game, cells: result, status: "playing"};
+    const result = updatePositions(game, shuffled, (cell) => ({...cell, isMine: true}));
+    return {...result, status: "playing"};
 }
 
 function neighborsFlagCount(game: Game, x: number, y: number): number {
-    return neighbors(game, x, y).map(([x, y]) => getCell(game, x, y)).filter(c => c.state === "flagged").length
+    return neighbors(game, x, y).map(([nx, ny]) => getCell(game, nx, ny)).filter(c => c.state === "flagged").length
 }
 
 /** Clicking a revealed number with exactly that many adjacent flags reveals its other hidden neighbors. */
@@ -259,4 +210,26 @@ export const minesLeft = (game: Game): number => game.mineCount - flagCount(game
 function withRevealStatus(game: Game): Game {
     const isWon = revealedCount(game) === game.width * game.height - game.mineCount;
     return {...game, status: isWon ? "won" : "playing"}
+}
+
+function updatePositions(game: Game, positions: readonly Position[], update: (cell: Cell) => Cell): Game {
+    const columnsByRow: Map<number, Set<number>> = new Map();
+    const cells: (readonly Cell[])[] = []
+    for (const [x, y] of positions) {
+        if (columnsByRow.get(y) === undefined) columnsByRow.set(y, new Set());
+        columnsByRow.get(y)!.add(x);
+    }
+    for (const [y, row] of game.cells.entries()) {
+        const columns = columnsByRow.get(y);
+        if (columns === undefined) cells.push(row);
+        else {
+            const newRow: Cell[] = [];
+            for (const [x, cell] of row.entries()) {
+                if (!columns.has(x)) newRow.push(cell);
+                else newRow.push(update(cell));
+            }
+            cells.push(newRow);
+        }
+    }
+    return {...game, cells};
 }
