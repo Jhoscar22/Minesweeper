@@ -96,12 +96,12 @@ function isOver(game: Game): boolean {
  * reveals its whole connected region (breadth-first search), stopping at numbered cells.
  */
 export function reveal(game: Game, x: number, y: number, random: () => number = Math.random): Game {
-    // NEW at the top: if status is "ready" → game = placeMines(game, x, y, random)
     if (isOver(game)) return game;
-    const cell = getCell(game, x, y);
-    if (cell.state !== "hidden") return game;
+    
+    if (getCell(game, x, y).state !== "hidden") return game;
     
     const gameWithMines = game.status === "ready" ? placeMines(game, x, y, random) : game;
+    const cell = getCell(gameWithMines, x, y);
 
     if (cell.isMine) {
         const next = setCell(gameWithMines, x, y, { ...cell, state: "revealed" });
@@ -112,7 +112,7 @@ export function reveal(game: Game, x: number, y: number, random: () => number = 
 }
 
 function revealPositions(game: Game, positions: ReadonlyArray<Position>): Game {
-    return {...updatePositions(game, positions, (c) => (c.state === "hidden" ? { ...c, state: "revealed" } : c))};
+    return updatePositions(game, positions, (c) => (c.state === "hidden" ? { ...c, state: "revealed" } : c));
 }
 
 export function toggleFlag(game: Game, x: number, y: number): Game {
@@ -165,7 +165,7 @@ function shuffle<T>(items: readonly T[], random: () => number): T[] {
         const j = Math.floor(random() * (i + 1));
         const temp: T = arr[i]!;
         arr[i] = arr[j]!;
-        arr[j] = temp!;
+        arr[j] = temp;
     }
     return arr;
 }
