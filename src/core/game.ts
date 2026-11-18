@@ -3,8 +3,8 @@ export type GameStatus = "ready" | "playing" | "won" | "lost";
 export type Position = readonly [x: number, y: number];
 
 export type Cell = {
-  readonly isMine: boolean;
-  readonly state: CellState;
+    readonly isMine: boolean;
+    readonly state: CellState;
 };
 
 export type Game = {
@@ -25,7 +25,7 @@ function key(x: number, y: number): string {
 }
 
 export function createGame(width: number, height: number, minePositions: readonly Position[]): Game {
-    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 ) {
+    if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
         throw new Error(`Invalid board size: ${width}x${height}`);
     }
 
@@ -34,7 +34,7 @@ export function createGame(width: number, height: number, minePositions: readonl
         if (!inBounds(width, height, x, y)) {
             throw new Error(`Mine out of bounds: ${x},${y}`);
         }
-        mines.add(key(x,y));
+        mines.add(key(x, y));
     }
     if (mines.size !== minePositions.length) {
         throw new Error(`Duplicate mine positions`);
@@ -46,11 +46,11 @@ export function createGame(width: number, height: number, minePositions: readonl
     for (let y = 0; y < height; y++) {
         const row: Cell[] = [];
         for (let x = 0; x < width; x++) {
-            row.push({ isMine: mines.has(key(x, y)), state: "hidden" });  
+            row.push({ isMine: mines.has(key(x, y)), state: "hidden" });
         }
         cells.push(row);
     }
-    return {width, height, mineCount: mines.size, cells, status: "ready"}
+    return { width, height, mineCount: mines.size, cells, status: "playing" }
 }
 
 export function getCell(game: Game, x: number, y: number): Cell {
@@ -75,8 +75,8 @@ export function neighbors(game: Game, x: number, y: number): Position[] {
     const result: Position[] = []
     for (const dy of offsets) {
         for (const dx of offsets) {
-            if (inBounds(game.width, game.height, x+dx, y+dy) && (dy !== 0 || dx !== 0)) {
-                result.push([x+dx, y+dy]);
+            if (inBounds(game.width, game.height, x + dx, y + dy) && (dy !== 0 || dx !== 0)) {
+                result.push([x + dx, y + dy]);
             }
         }
     }
@@ -95,26 +95,27 @@ function isOver(game: Game): boolean {
  * Reveals the cell at (x, y). A mine loses the game. A cell with no adjacent mines
  * reveals its whole connected region (breadth-first search), stopping at numbered cells.
  */
-export function reveal(game: Game, x: number, y: number): Game {
+export function reveal(game: Game, x: number, y: number, random: () => number = Math.random): Game {
+    // NEW at the top: if status is "ready" → game = placeMines(game, x, y, random)
     if (isOver(game)) return game;
     const cell = getCell(game, x, y);
     if (cell.state !== "hidden") return game;
+    
+    const gameWithMines = game.status === "ready" ? placeMines(game, x, y, random) : game;
 
     if (cell.isMine) {
-        const next = setCell(game, x, y, {...cell, state: "revealed"});
-        return {...next, status: "lost"};
+        const next = setCell(gameWithMines, x, y, { ...cell, state: "revealed" });
+        return { ...next, status: "lost" };
     } else {
-        const revealed = revealFlood(game, x, y);
-        const isWon = revealedCount(revealed) === game.width * game.height - game.mineCount;
-        return {...revealed, status: isWon ? "won" : "playing"};
+        return withRevealStatus(revealFlood(gameWithMines, [[x, y]]));
     }
 }
 
 function revealInRow(row: readonly Cell[], columns: ReadonlySet<number>): readonly Cell[] {
     const result: Cell[] = [];
-    for (const [x, cell] of row.entries()){
+    for (const [x, cell] of row.entries()) {
         if (columns.has(x) && cell.state === "hidden") {
-            result.push({...cell, state: "revealed"});
+            result.push({ ...cell, state: "revealed" });
         } else {
             result.push(cell);
         }
@@ -124,42 +125,42 @@ function revealInRow(row: readonly Cell[], columns: ReadonlySet<number>): readon
 
 function revealPositions(game: Game, positions: ReadonlyArray<Position>): Game {
     const columnsToRevealByRow: Map<number, Set<number>> = new Map();
-    for (const [x, y] of  positions) {
+    for (const [x, y] of positions) {
         if (columnsToRevealByRow.get(y) === undefined) {
             columnsToRevealByRow.set(y, new Set());
         }
         columnsToRevealByRow.get(y)!.add(x);
     }
     const result: (readonly Cell[])[] = [];
-    for(const [y, row] of game.cells.entries()) {
+    for (const [y, row] of game.cells.entries()) {
         const columnsToReveal = columnsToRevealByRow.get(y);
-        if (columnsToReveal === undefined){
+        if (columnsToReveal === undefined) {
             result[y] = row;
         } else {
             result[y] = revealInRow(row, columnsToReveal);
         }
     }
-    return {...game, cells: result};
+    return { ...game, cells: result };
 }
 
-export function toggleFlag(game: Game, x: number, y: number): Game{
+export function toggleFlag(game: Game, x: number, y: number): Game {
     if (isOver(game)) return game;
     const cell = getCell(game, x, y);
     if (cell.state === "revealed") return game;
 
-    return setCell(game, x, y, {...cell, state: cell.state === "hidden" ? "flagged" : "hidden"});
+    return setCell(game, x, y, { ...cell, state: cell.state === "hidden" ? "flagged" : "hidden" });
 }
 
 export const flagCount = (game: Game): number =>
-  game.cells.flat().filter(c => c.state === "flagged").length;
+    game.cells.flat().filter(c => c.state === "flagged").length;
 
 export const revealedCount = (game: Game): number =>
-  game.cells.flat().filter(c => c.state === "revealed").length;
+    game.cells.flat().filter(c => c.state === "revealed").length;
 
-function revealFlood(game: Game, x: number, y: number): Game {
-    // Breadth-first search: zeros expand to their neighbors; numbered cells are revealed but don't expand.
-    const queue: Position[] = [[x, y]];
-    const seen: Set<string> = new Set([key(x, y)]);
+function revealFlood(game: Game, starts: readonly Position[]): Game {
+    // Multi-source Breadth-first search: zeros expand to their neighbors; numbered cells are revealed but don't expand.
+    const queue: Position[] = [...starts];
+    const seen: Set<string> = new Set(starts.map(([x, y]) => key(x, y)));
     for (let i = 0; i < queue.length; i++) {
         // It does not take from the queue, but the index increment is equivalent
         const [currentX, currentY] = queue[i]!;
@@ -174,4 +175,88 @@ function revealFlood(game: Game, x: number, y: number): Game {
     }
     // Every position enters the queue exactly once, so the queue is the list to reveal.
     return revealPositions(game, queue);
+}
+
+/** New game, mines not placed yet. Mines get placed on the first reveal, outside a 3×3 safe zone. */
+export function newGame(width: number, height: number, mineCount: number): Game {
+    if (!Number.isSafeInteger(mineCount)) throw new Error(`Mine count must be a safe integer`);
+    if (mineCount < 0) throw new Error(`Mine count must be a non-negative integer`);
+    if (mineCount > width * height - 9) throw new Error(`Mine count exceeds limit allowed by board size`);
+    
+    return {...createGame(width, height, []), mineCount, status: "ready"};
+}
+
+/** Fisher–Yates. Returns a shuffled COPY; the input isn't modified. */
+function shuffle<T>(items: readonly T[], random: () => number): T[] {
+    const arr = [...items];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        const temp: T = arr[i]!;
+        arr[i] = arr[j]!;
+        arr[j] = temp!;
+    }
+    return arr;
+}
+
+/** Places game.mineCount mines uniformly at random, never in the 3×3 zone around (safeX, safeY). */
+function placeMines(game: Game, safeX: number, safeY: number, random: () => number): Game {
+    const safeZone: Set<string> = new Set([key(safeX, safeY)]);
+    for (const [neighborX, neighborY] of neighbors(game, safeX, safeY)) {
+        safeZone.add(key(neighborX, neighborY));
+    }
+    const candidates: Position[] = []
+    for (let y = 0; y < game.height; y++) {
+        for (let x = 0; x < game.width; x++) {
+            if (!safeZone.has(key(x, y))) candidates.push([x, y]);
+        }
+    }
+    const shuffled = shuffle(candidates, random).slice(0, game.mineCount);
+    const columnsToSetMineByRow: Map<number, Set<number>> = new Map();
+    for (const [x, y] of shuffled) {
+        if (columnsToSetMineByRow.get(y) === undefined) columnsToSetMineByRow.set(y, new Set());
+        columnsToSetMineByRow.get(y)!.add(x);
+    }
+    const result: (readonly Cell[])[] = []
+    for (const [y, row] of game.cells.entries()) {
+        const columnsToSetMine = columnsToSetMineByRow.get(y)
+        if (columnsToSetMine === undefined) {
+            result.push(row);
+        } else {
+            const newRow: Cell[] = [];
+            for (const [x, cell] of row.entries()) {
+                if (columnsToSetMine.has(x)) {
+                    newRow.push({...cell, isMine: true});
+                } else {
+                    newRow.push(cell);
+                }
+            }
+            result.push(newRow);
+        }
+    }
+    return {...game, cells: result, status: "playing"};
+}
+
+function neighborsFlagCount(game: Game, x: number, y: number): number {
+    return neighbors(game, x, y).map(([x, y]) => getCell(game, x, y)).filter(c => c.state === "flagged").length
+}
+
+/** Clicking a revealed number with exactly that many adjacent flags reveals its other hidden neighbors. */
+export function chord(game: Game, x: number, y: number): Game {
+    if (isOver(game) || getCell(game, x, y).state !== "revealed") return game;
+    if (neighborsFlagCount(game, x, y) !== adjacentMineCount(game, x, y)) return game;
+    const targets: Position[] = neighbors(game, x, y).filter(([nx, ny]) => getCell(game, nx, ny).state === "hidden");
+    for (const [nx, ny] of targets) {
+        if (getCell(game, nx, ny).isMine) {
+            return {...revealPositions(game, targets), status: "lost"}
+        }
+    }
+    return withRevealStatus(revealFlood(game, targets));
+}
+
+export const minesLeft = (game: Game): number => game.mineCount - flagCount(game);
+
+
+function withRevealStatus(game: Game): Game {
+    const isWon = revealedCount(game) === game.width * game.height - game.mineCount;
+    return {...game, status: isWon ? "won" : "playing"}
 }
