@@ -1,21 +1,111 @@
-/* src/ui/style.css */
+.minesweeper {
+  --ms-bg: #F6F7F0;
+  --ms-surface: #BFF4FF;
+  --ms-cell-hidden: #A3D5FF;
+  --ms-cell-hover: #B1E5FF;
+  --ms-cell-revealed: #F6F7F0;
+  --ms-mint: #A8E6DA;
+  --ms-pink: #F7A8BF;
+  --ms-outline: #4B4A6B;
+  --ms-radius: 6px;
+  --ms-cell-size: 2rem;
+  --ms-font: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  --ms-n1: #1F6FB2; --ms-n2: #2E7D5B; --ms-n3: #C2416B; --ms-n4: #3B3F8F;
+  --ms-n5: #9A3B2E; --ms-n6: #167A82; --ms-n7: #3A3A4A; --ms-n8: #6B6B7B;
+
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 100%;
+  padding: 1rem;
+  background: var(--ms-surface);
+  border: 3px solid var(--ms-outline);
+  border-radius: 16px;
+  box-shadow: 6px 6px 0 var(--ms-outline);
+  font-family: var(--ms-font);
+  color: var(--ms-outline);
+}
+
+.minesweeper .ms-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+
+.minesweeper .ms-counter,
+.minesweeper .ms-timer {
+  min-width: 4ch;
+  padding: 0.25rem 0.5rem;
+  background: var(--ms-bg);
+  border: 2px solid var(--ms-outline);
+  border-radius: var(--ms-radius);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.minesweeper .ms-restart,
+.minesweeper .ms-difficulty {
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  background: var(--ms-mint);
+  border: 2px solid var(--ms-outline);
+  border-radius: var(--ms-radius);
+  box-shadow: 2px 2px 0 var(--ms-outline);
+  cursor: pointer;
+}
+.minesweeper .ms-restart:active { transform: translate(2px, 2px); box-shadow: none; }
+
+.minesweeper .ms-status { margin: 0; font-weight: 700; }
+.minesweeper .ms-status::after { content: "_"; animation: ms-blink 1s steps(1) infinite; }
+
+.minesweeper .ms-board-wrap { overflow-x: auto; max-width: 100%; }
 .minesweeper .ms-board {
-    display: grid;
-    grid-template-columns: repeat(var(--cols), 2rem);
-    gap: 2px;
-    width: max-content;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--ms-cell-size));
+  gap: 3px;
+  width: max-content;
+  padding: 6px;
+  background: var(--ms-bg);
+  border: 3px solid var(--ms-outline);
+  border-radius: 10px;
 }
+
 .minesweeper .ms-cell {
-    width: 2rem;
-    height: 2rem;
-    font: bold 1rem system-ui;
-    background-color: beige;
+  width: var(--ms-cell-size);
+  height: var(--ms-cell-size);
+  padding: 0;
+  font: 700 1rem var(--ms-font);
+  color: var(--ms-outline);
+  border: 2px solid var(--ms-outline);
+  border-radius: var(--ms-radius);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;   /* no iOS menu on long-press */
+  touch-action: manipulation;    /* no double-tap zoom */
 }
+
+.minesweeper .ms-hidden {
+  background: var(--ms-cell-hidden);
+  box-shadow: 2px 2px 0 var(--ms-outline);
+  cursor: pointer;
+  transition: transform 80ms, box-shadow 80ms;
+}
+.minesweeper .ms-hidden:hover { background: var(--ms-cell-hover); }
+.minesweeper .ms-hidden:active { transform: translate(2px, 2px); box-shadow: none; }
 
 .minesweeper .ms-revealed {
-    background-color: bisque;
+  background: var(--ms-cell-revealed);
+  border-color: color-mix(in srgb, var(--ms-outline) 25%, transparent);
 }
+.minesweeper .ms-exploded { background: var(--ms-pink); border-color: var(--ms-outline); }
 
-.minesweeper .ms-exploded {
-    background-color: lightcoral;
+.minesweeper .ms-n1 { color: var(--ms-n1); } .minesweeper .ms-n2 { color: var(--ms-n2); }
+.minesweeper .ms-n3 { color: var(--ms-n3); } .minesweeper .ms-n4 { color: var(--ms-n4); }
+.minesweeper .ms-n5 { color: var(--ms-n5); } .minesweeper .ms-n6 { color: var(--ms-n6); }
+.minesweeper .ms-n7 { color: var(--ms-n7); } .minesweeper .ms-n8 { color: var(--ms-n8); }
+
+.minesweeper .ms-cell:focus-visible { outline: 3px solid var(--ms-pink); outline-offset: 2px; }
+
+@keyframes ms-blink { 50% { opacity: 0; } }
+
+@media (max-width: 480px) { .minesweeper { --ms-cell-size: 1.75rem; } }
+@media (prefers-reduced-motion: reduce) {
+  .minesweeper * { transition: none !important; animation: none !important; }
 }

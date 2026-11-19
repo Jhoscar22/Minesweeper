@@ -4,10 +4,10 @@ export type CellView = { text: string; className: string; label: string };
 export function cellView(game: Game, x: number, y: number): CellView {
     const cell = getCell(game, x, y);
 
-    const view = { text: "", className: "ms-cell", label: "hidden" };
+    const view = { text: "", className: "ms-cell ms-hidden", label: "hidden" };
 
     if (cell.state === "revealed") {
-        view.className += " ms-revealed";
+        view.className = "ms-cell ms-revealed";
         if (cell.isMine) {
             view.text = "💣";
             view.className += " ms-exploded";
@@ -16,12 +16,14 @@ export function cellView(game: Game, x: number, y: number): CellView {
             const adjacentMines = adjacentMineCount(game, x, y);
             if (adjacentMines > 0) {
                 view.text = String(adjacentMines);
+                view.className += ` ms-n${adjacentMines}`;
                 view.label = String(adjacentMines);
             } else {
                 view.label = "empty";
             }
         }
     } else if (cell.state === "flagged") {
+        view.className += " ms-flagged";
         if (game.status === "lost" && !cell.isMine) {
             view.text = "❌";
             view.label = "false flag";
