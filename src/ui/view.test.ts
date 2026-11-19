@@ -29,8 +29,8 @@ describe("cellView decision table", () => {
         const game = reveal(createGame(3, 4, [[1, 3]]), 1, 1);
         expect(cellView(game, 0, 0).text).toBe("");
     });
-    it("does not leak hidden mines in class name", () => {
+    it("does not leak hidden mines: a hidden mine looks exactly like a hidden safe cell", () => {
         const game = createGame(3, 3, [[1, 1]]);
-        expect(cellView(game, 1, 1).className).toBe("ms-cell");
+        expect(cellView(game, 1, 1)).toEqual(cellView(game, 0, 0));
     });
 })
