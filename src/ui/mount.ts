@@ -1,4 +1,4 @@
-import { newGame, reveal, chord, getCell, type Game } from "../core/game";
+import { newGame, reveal, chord, getCell, type Game, toggleFlag } from "../core/game";
 import { cellView } from "./view";
 import "./style.css";
 
@@ -38,12 +38,30 @@ export function mount(root: HTMLElement): () => void {
         renderedCells = null; // forces a full render
     }
 
+    function getButton(x: number, y: number): HTMLButtonElement {
+        const button = buttons[y]?.[x];
+        if (button === undefined) throw new Error(`No button at ${x},${y}`);
+        return button;
+    }
+
+    function renderCell(x: number, y: number) {
+        const view = cellView(game, x, y);
+        const button = getButton(x, y);
+        button.textContent = view.text;
+        button.className = view.className;
+        button.setAttribute("aria-label", view.label);
+    }
+
     function render() {
-        // TODO 1: statusText.textContent according to game.status
-        // TODO 2: if the status changed → full render (the memo trap)
-        // TODO 3: for each row y: if renderedCells?.[y] === row → skip the row
-        //         for each cell x: if it's the same object → skip it
-        //         otherwise: const view = cellView(game, x, y), then update buttons[y][x]
+        const fullRender = renderedStatus !== game.status;
+        statusText.textContent = game.status;
+        for (const [y, row] of game.cells.entries()) {
+            if (!fullRender && renderedCells?.[y] === row) continue;
+            for (const [x, cell] of row.entries()) {
+                if (!fullRender && renderedCells?.[y]?.[x] === cell) continue;
+                renderCell(x, y);
+            }
+        }
         renderedCells = game.cells;
         renderedStatus = game.status;
     }
@@ -59,16 +77,28 @@ export function mount(root: HTMLElement): () => void {
         if (!button) return;
         const x = Number(button.dataset.x);
         const y = Number(button.dataset.y);
-        // TODO 4: hidden → update(reveal(...)); revealed → update(chord(...))
+        const cell = getCell(game, x, y);
+        update(cell.state === "revealed" ? chord(game, x, y) : reveal(game, x, y));
+    }
+
+    function onContextMenu(event: PointerEvent) {
+        event.preventDefault();
+        const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".ms-cell");
+        if (!button) return;
+        const x = Number(button.dataset.x);
+        const y = Number(button.dataset.y);
+        update(toggleFlag(game, x, y));
     }
 
     board.addEventListener("click", onClick);
+    board.addEventListener("contextmenu", onContextMenu);
     buildBoard();
     render();
 
     // "useEffect cleanup": undo everything mount did
     return () => {
         board.removeEventListener("click", onClick);
+        board.removeEventListener("contextmenu", onContextMenu);
         container.remove();
     };
 }

@@ -9,4 +9,13 @@
     width: 2rem;
     height: 2rem;
     font: bold 1rem system-ui;
+    background-color: beige;
+}
+
+.minesweeper .ms-revealed {
+    background-color: bisque;
+}
+
+.minesweeper .ms-exploded {
+    background-color: lightcoral;
 }
