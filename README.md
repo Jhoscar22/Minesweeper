@@ -7,9 +7,9 @@ The classic game, rebuilt from scratch in TypeScript with no framework. The game
 - **Mouse and touch:** right-click or long-press to flag; click a number to chord
 - **Tested:** the rules and the cell display have unit tests, including a decision table for every cell state
 
-<!-- ## Play it
+## Play it
 
-https://jhoscar22.github.io/Minesweeper/ -->
+https://jhoscar22.github.io/Minesweeper/
 
 ## Run it
 
