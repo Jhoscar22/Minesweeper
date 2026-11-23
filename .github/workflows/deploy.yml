@@ -1,0 +1,45 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]      # each merge to main → test + deploy
+  pull_request:           # each PR → test only
+  workflow_dispatch:      # a "Run workflow" button in the Actions tab
+
+permissions:
+  contents: read          # by default the workflow can only read the repo
+
+concurrency:
+  group: pages
+  cancel-in-progress: false   # never cut a deploy off halfway
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7          # downloads your code
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm                        # reuses node_modules between runs
+      - run: npm ci                         # exact versions from package-lock.json
+      - run: npm test                       # if a test fails, it stops here: nothing broken gets deployed
+      - run: npm run build                  # tsc + vite build → dist/
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build                            # only runs if build passed
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write                          # only this job can publish
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
