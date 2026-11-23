@@ -7,15 +7,21 @@ The classic game, rebuilt from scratch in TypeScript with no framework. The game
 - **Mouse and touch:** right-click or long-press to flag; click a number to chord
 - **Tested:** the rules and the cell display have unit tests, including a decision table for every cell state
 
+<!-- ## Play it
+
+https://jhoscar22.github.io/Minesweeper/ -->
+
 ## Run it
 
 Requires [Node.js](https://nodejs.org) (current LTS).
 
 ```bash
-npm ci          # install exact dependency versions from package-lock.json
-npm run dev     # start the dev server, then open the URL it prints
-npm test        # run the tests (watch mode)
-npm run build   # type-check and build static files into dist/
+npm ci               # install exact dependency versions from package-lock.json
+npm run dev          # start the dev server, then open the URL it prints
+npm test             # run the tests once
+npm run test:watch   # re-run the tests on every change
+npm run build        # type-check and build static files into dist/
+npm run preview      # serve dist/ locally, exactly as it will be deployed
 ```
 
 To try it on your phone, run `npm run dev -- --host` and open the "Network" URL on a device on the same Wi-Fi.
